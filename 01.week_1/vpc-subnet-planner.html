@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VPC Subnet 规划工具</title>
+
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0e1a;
+      --surface: #111827;
+      --surface2: #1a2235;
+      --border: #1e2d45;
+      --accent: #00d4ff;
+      --accent2: #7c3aed;
+      --accent3: #10b981;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --text: #e2e8f0;
+      --text-muted: #64748b;
+      --text-dim: #94a3b8;
+      --public: #0ea5e9;
+      --private: #8b5cf6;
+      --protected: #10b981;
+      --mgmt: #f59e0b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Noto Sans SC', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    h1 span {
+      color: var(--accent);
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 20px;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .panel-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title::before {
+      content: '';
+      display: block;
+      width: 3px;
+      height: 14px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+      margin-top: 14px;
+      font-weight: 500;
+    }
+
+    label:first-child {
+      margin-top: 0;
+    }
+
+    input,
+    select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--accent);
+    }
+
+    select option {
+      background: var(--surface2);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Noto Sans SC', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #0099cc);
+      color: #000;
+      width: 100%;
+      margin-top: 18px;
+      justify-content: center;
+      font-size: 14px;
+      padding: 12px;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 11px;
+      background: var(--surface2);
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+
+    .btn-sm:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn-danger-sm {
+      padding: 5px 10px;
+      font-size: 11px;
+      background: transparent;
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-danger-sm:hover {
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .subnet-entry {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 10px;
+      position: relative;
+    }
+
+    .subnet-entry-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .subnet-type-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-public {
+      background: rgba(14, 165, 233, 0.15);
+      color: var(--public);
+      border: 1px solid rgba(14, 165, 233, 0.3);
+    }
+
+    .badge-private {
+      background: rgba(139, 92, 246, 0.15);
+      color: var(--private);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .badge-protected {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--protected);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .badge-mgmt {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--mgmt);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .subnet-entry-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .subnet-entry input,
+    .subnet-entry select {
+      padding: 7px 10px;
+      font-size: 12px;
+      margin: 0;
+    }
+
+    label.small {
+      font-size: 11px;
+      margin-top: 0;
+      margin-bottom: 4px;
+    }
+
+    .remove-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: color 0.2s;
+    }
+
+    .remove-btn:hover {
+      color: var(--danger);
+    }
+
+    .add-subnet-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .add-subnet-row select {
+      flex: 1;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+
+    .btn-add {
+      background: rgba(0, 212, 255, 0.1);
+      color: var(--accent);
+      border: 1px solid rgba(0, 212, 255, 0.3);
+      padding: 8px 14px;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .btn-add:hover {
+      background: rgba(0, 212, 255, 0.2);
+    }
+
+    /* Results */
+    .results {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .vpc-overview {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .stat-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .stat-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--accent);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .subnet-table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .subnet-table-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      padding: 10px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      text-align: left;
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 11px 16px;
+      border-bottom: 1px solid rgba(30, 45, 69, 0.5);
+      vertical-align: middle;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+    }
+
+    .az-badge {
+      font-size: 10px;
+      padding: 2px 7px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-dim);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .usage-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .bar-wrap {
+      flex: 1;
+      height: 6px;
+      background: var(--surface2);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+
+    .bar-text {
+      font-size: 11px;
+      color: var(--text-muted);
+      white-space: nowrap;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Visual Map */
+    .vpc-map {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .map-vpc-box {
+      border: 2px dashed rgba(0, 212, 255, 0.3);
+      border-radius: 12px;
+      padding: 16px;
+      position: relative;
+    }
+
+    .map-vpc-label {
+      position: absolute;
+      top: -10px;
+      left: 16px;
+      background: var(--surface);
+      padding: 0 8px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.5px;
+    }
+
+    .map-az-row {
+      display: grid;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .map-az {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.01);
+    }
+
+    .map-az-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .map-subnets {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .map-subnet {
+      border-radius: 6px;
+      padding: 8px 12px;
+      min-width: 140px;
+      flex: 1;
+      transition: transform 0.2s;
+    }
+
+    .map-subnet:hover {
+      transform: translateY(-2px);
+    }
+
+    .map-subnet.public {
+      background: rgba(14, 165, 233, 0.1);
+      border: 1px solid rgba(14, 165, 233, 0.3);
+    }
+
+    .map-subnet.private {
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+    }
+
+    .map-subnet.protected {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .map-subnet.mgmt {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .map-subnet-name {
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .map-subnet.public .map-subnet-name {
+      color: var(--public);
+    }
+
+    .map-subnet.private .map-subnet-name {
+      color: var(--private);
+    }
+
+    .map-subnet.protected .map-subnet-name {
+      color: var(--protected);
+    }
+
+    .map-subnet.mgmt .map-subnet-name {
+      color: var(--mgmt);
+    }
+
+    .map-subnet-cidr {
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-muted);
+    }
+
+    .map-subnet-hosts {
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+      opacity: 0.4;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+    }
+
+    .conflict-warn {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #fca5a5;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .export-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .overview-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="grid-bg"></div>
+  <div class="container">
+    <header>
+      <div class="logo">🌐</div>
+      <div>
+        <h1>VPC Subnet <span>规划工具</span></h1>
+        <div class="subtitle">AWS VPC 子网 CIDR 自动分配 · 可用区布局 · 容量规划</div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <!-- Left Panel -->
+      <div>
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-title">VPC 基本配置</div>
+
+          <label>VPC CIDR 块</label>
+          <input type="text" id="vpcCidr" value="10.0.0.0/16" placeholder="e.g. 10.0.0.0/16">
+
+          <label>AWS Region</label>
+          <select id="region">
+            <option value="ap-northeast-1">ap-northeast-1 (Tokyo)</option>
+            <option value="ap-northeast-3">ap-northeast-3 (Osaka)</option>
+            <option value="ap-southeast-1">ap-southeast-1 (Singapore)</option>
+            <option value="us-east-1">us-east-1 (N. Virginia)</option>
+            <option value="us-west-2">us-west-2 (Oregon)</option>
+            <option value="eu-west-1">eu-west-1 (Ireland)</option>
+            <option value="custom">自定义...</option>
+          </select>
+
+          <label>可用区数量</label>
+          <select id="azCount">
+            <option value="2">2 个 AZ</option>
+            <option value="3" selected>3 个 AZ</option>
+          </select>
+
+          <label>子网掩码步进</label>
+          <select id="subnetSize">
+            <option value="20">/20 (4094 hosts)</option>
+            <option value="22">/22 (1022 hosts)</option>
+            <option value="23">/23 (510 hosts)</option>
+            <option value="24" selected>/24 (254 hosts)</option>
+            <option value="25">/25 (126 hosts)</option>
+            <option value="26">/26 (62 hosts)</option>
+            <option value="27">/27 (30 hosts)</option>
+            <option value="28">/28 (14 hosts)</option>
+          </select>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">子网层配置</div>
+          <div id="subnetEntries"></div>
+
+          <div class="add-subnet-row">
+            <select id="newSubnetType">
+              <option value="public">Public (公网)</option>
+              <option value="private">Private (应用层)</option>
+              <option value="protected">Protected (数据层)</option>
+              <option value="mgmt">Management (管理)</option>
+            </select>
+            <button class="btn btn-add" onclick="addSubnetEntry()">＋ 添加层</button>
+          </div>
+
+          <button class="btn btn-primary" onclick="calculate()">⚡ 生成规划</button>
+        </div>
+      </div>
+
+      <!-- Right Panel -->
+      <div class="results" id="results">
+        <div class="panel" style="text-align:center; padding: 60px 20px;">
+          <div style="font-size:48px; margin-bottom:16px; opacity:0.3">🗺️</div>
+          <div style="color:var(--text-muted); font-size:14px">配置左侧参数后点击「生成规划」</div>
+          <div style="color:var(--text-muted); font-size:12px; margin-top:8px">将自动分配 CIDR、计算可用主机数</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const typeLabels = { public: 'PUBLIC', private: 'PRIVATE', protected: 'PROTECTED', mgmt: 'MGMT' };
+    const typeNames = { public: '公网子网', private: '私有子网 (App)', protected: '数据库子网', mgmt: '管理子网' };
+    const azLetters = ['a', 'b', 'c', 'd'];
+
+    let subnetEntries = [
+      { id: 1, type: 'public', name: 'public' },
+      { id: 2, type: 'private', name: 'app' },
+      { id: 3, type: 'protected', name: 'data' },
+    ];
+    let nextId = 4;
+
+    function renderEntries() {
+      const container = document.getElementById('subnetEntries');
+      container.innerHTML = '';
+      subnetEntries.forEach(entry => {
+        const div = document.createElement('div');
+        div.className = 'subnet-entry';
+        div.innerHTML = `
+      <button class="remove-btn" onclick="removeEntry(${entry.id})">×</button>
+      <div class="subnet-entry-header">
+        <span class="subnet-type-badge badge-${entry.type}">${typeLabels[entry.type]}</span>
+        <span style="font-size:12px;color:var(--text-dim)">${typeNames[entry.type]}</span>
+      </div>
+      <div class="subnet-entry-row">
+        <div>
+          <label class="small">子网名称</label>
+          <input type="text" value="${entry.name}" onchange="updateEntry(${entry.id},'name',this.value)" placeholder="subnet name">
+        </div>
+        <div>
+          <label class="small">用途备注</label>
+          <input type="text" value="${entry.note || ''}" onchange="updateEntry(${entry.id},'note',this.value)" placeholder="e.g. ALB, RDS...">
+        </div>
+      </div>
+    `;
+        container.appendChild(div);
+      });
+    }
+
+    function addSubnetEntry() {
+      const type = document.getElementById('newSubnetType').value;
+      const defaults = { public: 'public', private: 'app', protected: 'data', mgmt: 'mgmt' };
+      subnetEntries.push({ id: nextId++, type, name: defaults[type] });
+      renderEntries();
+    }
+
+    function removeEntry(id) {
+      subnetEntries = subnetEntries.filter(e => e.id !== id);
+      renderEntries();
+    }
+
+    function updateEntry(id, field, val) {
+      const e = subnetEntries.find(e => e.id === id);
+      if (e) e[field] = val;
+    }
+
+    // CIDR parsing
+    function parseCidr(cidr) {
+      const [ip, prefix] = cidr.split('/');
+      const parts = ip.split('.').map(Number);
+      const num = parts.reduce((acc, p) => (acc << 8) + p, 0) >>> 0;
+      return { num, prefix: parseInt(prefix), parts };
+    }
+
+    function numToIp(n) {
+      return [(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join('.');
+    }
+
+    function hostsInSubnet(prefix) {
+      const total = Math.pow(2, 32 - prefix);
+      return Math.max(0, total - 5); // AWS reserves 5
+    }
+
+    function calculate() {
+      const vpcCidrStr = document.getElementById('vpcCidr').value.trim();
+      const azCount = parseInt(document.getElementById('azCount').value);
+      const subnetPrefix = parseInt(document.getElementById('subnetSize').value);
+      const region = document.getElementById('region').value;
+
+      let vpc;
+      try {
+        vpc = parseCidr(vpcCidrStr);
+      } catch (e) {
+        alert('VPC CIDR 格式不正确'); return;
+      }
+
+      if (vpc.prefix > subnetPrefix) {
+        alert(`子网掩码 /${subnetPrefix} 必须大于 VPC 掩码 /${vpc.prefix}`); return;
+      }
+
+      const azNames = azLetters.slice(0, azCount).map(l => `${region}-${l}`);
+      const subnetStep = Math.pow(2, 32 - subnetPrefix);
+      const totalNeeded = subnetEntries.length * azCount;
+      const vpcSize = Math.pow(2, 32 - vpc.prefix);
+
+      if (totalNeeded * subnetStep > vpcSize) {
+        alert(`VPC 空间不足！需要 ${totalNeeded} 个 /${subnetPrefix} 子网，但 /${vpc.prefix} 只能容纳 ${Math.floor(vpcSize / subnetStep)} 个。请减少子网数量或使用更小的子网掩码。`);
+        return;
+      }
+
+      // Allocate
+      let cursor = vpc.num;
+      const allocated = [];
+
+      subnetEntries.forEach(entry => {
+        azNames.forEach((az, azIdx) => {
+          const cidr = `${numToIp(cursor)}/${subnetPrefix}`;
+          const broadcast = cursor + subnetStep - 1;
+          allocated.push({
+            name: `${entry.name}-${azLetters[azIdx]}`,
+            type: entry.type,
+            note: entry.note || '',
+            az: az,
+            azShort: azLetters[azIdx],
+            cidr,
+            start: cursor,
+            end: broadcast,
+            hosts: hostsInSubnet(subnetPrefix),
+            prefix: subnetPrefix,
+          });
+          cursor += subnetStep;
+        });
+      });
+
+      renderResults(vpcCidrStr, vpc, azNames, allocated, vpcSize);
+    }
+
+    function renderResults(vpcCidrStr, vpc, azNames, allocated, vpcSize) {
+      const usedIPs = allocated.length * Math.pow(2, 32 - allocated[0].prefix);
+      const usedPct = Math.round(usedIPs / vpcSize * 100);
+      const totalHosts = allocated.reduce((s, a) => s + a.hosts, 0);
+
+      const container = document.getElementById('results');
+      container.innerHTML = '';
+
+      // Overview
+      const overview = document.createElement('div');
+      overview.className = 'vpc-overview';
+      overview.innerHTML = `
+    <div class="panel-title">VPC 概览</div>
+    <div class="overview-grid">
+      <div class="stat-card">
+        <span class="stat-val">${vpcCidrStr}</span>
+        <span class="stat-label">VPC CIDR</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-val">${allocated.length}</span>
+        <span class="stat-label">子网总数</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-val">${totalHosts.toLocaleString()}</span>
+        <span class="stat-label">可用主机 IP 总数</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-val" style="color:${usedPct > 80 ? 'var(--danger)' : usedPct > 50 ? 'var(--warn)' : 'var(--accent3)'}">${usedPct}%</span>
+        <span class="stat-label">地址空间使用率</span>
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">地址空间使用率</div>
+      <div style="background:var(--surface2);border-radius:4px;height:8px;overflow:hidden">
+        <div style="height:100%;width:${usedPct}%;background:linear-gradient(90deg,var(--accent3),var(--accent));border-radius:4px;transition:width 0.8s ease"></div>
+      </div>
+    </div>
+  `;
+      container.appendChild(overview);
+
+      // Visual Map
+      const mapDiv = document.createElement('div');
+      mapDiv.className = 'vpc-map';
+      let mapHtml = `<div class="panel-title">子网拓扑图</div>
+  <div class="map-vpc-box">
+    <span class="map-vpc-label">VPC: ${vpcCidrStr}</span>
+    <div class="map-az-row" style="grid-template-columns:repeat(${azNames.length},1fr)">`;
+
+      azNames.forEach((az, azIdx) => {
+        mapHtml += `<div class="map-az">
+      <div class="map-az-label">AZ: ${az}</div>
+      <div class="map-subnets">`;
+        allocated.filter(s => s.azShort === azLetters[azIdx]).forEach(s => {
+          mapHtml += `<div class="map-subnet ${s.type}">
+        <div class="map-subnet-name">${s.name}</div>
+        <div class="map-subnet-cidr">${s.cidr}</div>
+        <div class="map-subnet-hosts">${s.hosts.toLocaleString()} hosts</div>
+      </div>`;
+        });
+        mapHtml += `</div></div>`;
+      });
+
+      mapHtml += `</div></div>
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--public)"></div> Public</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--private)"></div> Private</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--protected)"></div> Protected</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--mgmt)"></div> Management</div>
+    <div style="margin-left:auto;font-size:11px;color:var(--text-muted)">⚠ AWS 每个子网保留 5 个 IP</div>
+  </div>`;
+      mapDiv.innerHTML = mapHtml;
+      container.appendChild(mapDiv);
+
+      // Table
+      const tableWrap = document.createElement('div');
+      tableWrap.className = 'subnet-table-wrap';
+      let tableHtml = `
+    <div class="subnet-table-header">
+      <div class="panel-title" style="margin:0">子网分配表</div>
+      <button class="btn btn-sm" onclick="copyTerraform()">📋 复制 Terraform</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>子网名称</th>
+          <th>类型</th>
+          <th>CIDR</th>
+          <th>可用区</th>
+          <th>可用 Hosts</th>
+          <th>用途</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+      allocated.forEach(s => {
+        const barW = Math.min(100, Math.round(s.hosts / 4094 * 100));
+        tableHtml += `<tr>
+      <td class="mono">${s.name}</td>
+      <td><span class="subnet-type-badge badge-${s.type}">${typeLabels[s.type]}</span></td>
+      <td class="mono">${s.cidr}</td>
+      <td><span class="az-badge">${s.az}</span></td>
+      <td>
+        <div class="usage-bar">
+          <div class="bar-wrap"><div class="bar-fill" style="width:${barW}%;background:var(--${s.type === 'public' ? 'public' : s.type === 'private' ? 'private' : s.type === 'protected' ? 'protected' : 'mgmt'})"></div></div>
+          <span class="bar-text">${s.hosts.toLocaleString()}</span>
+        </div>
+      </td>
+      <td style="font-size:12px;color:var(--text-muted)">${s.note || typeNames[s.type]}</td>
+    </tr>`;
+      });
+
+      tableHtml += `</tbody></table>`;
+      tableWrap.innerHTML = tableHtml;
+      container.appendChild(tableWrap);
+
+      // Store for export
+      window._allocated = allocated;
+      window._vpcCidr = vpcCidrStr;
+    }
+
+    function copyTerraform() {
+      if (!window._allocated) return;
+      const lines = ['# Auto-generated by VPC Subnet Planner', `# VPC CIDR: ${window._vpcCidr}`, ''];
+
+      lines.push('locals {');
+      lines.push('  subnets = {');
+      window._allocated.forEach(s => {
+        lines.push(`    "${s.name}" = {`);
+        lines.push(`      cidr_block        = "${s.cidr}"`);
+        lines.push(`      availability_zone = "${s.az}"`);
+        lines.push(`      type              = "${s.type}"`);
+        lines.push(`    }`);
+      });
+      lines.push('  }');
+      lines.push('}');
+      lines.push('');
+      lines.push('resource "aws_subnet" "this" {');
+      lines.push('  for_each = local.subnets');
+      lines.push('  vpc_id            = aws_vpc.main.id');
+      lines.push('  cidr_block        = each.value.cidr_block');
+      lines.push('  availability_zone = each.value.availability_zone');
+      lines.push('  map_public_ip_on_launch = each.value.type == "public" ? true : false');
+      lines.push('  tags = {');
+      lines.push('    Name = each.key');
+      lines.push('    Type = each.value.type');
+      lines.push('  }');
+      lines.push('}');
+
+      navigator.clipboard.writeText(lines.join('\n')).then(() => {
+        alert('✅ Terraform 代码已复制到剪贴板！');
+      });
+    }
+
+    // Init
+    renderEntries();
+    calculate();
+  </script>
+</body>
+
+</html>
