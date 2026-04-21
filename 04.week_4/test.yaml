@@ -22,3 +22,13 @@ Resources:
         - Key: month
           Value: "2026-04"
 
+  subnet01:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref mytestVPC01
+      CidrBlock: 10.0.1.0/16
+      Tags:
+        - Key: Name
+          Value: my-test-subnet-01
+        - Key: month
+          Value: "2026-04"

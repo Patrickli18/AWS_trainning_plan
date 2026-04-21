@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: A sample CloudFormation template with YAML comments.
+Resources:
+  mytestec2:
+    Type: AWS::EC2::Instance
+    Properties: 
+      ImageId: ami-0c94855ba95c71c99
+      InstanceType: t2.micro
+      Tags: 
+        - Key: Name
+          Value: my-test-ec2-01
+        - Key: month
+          Value: "2026-04"
+
+
