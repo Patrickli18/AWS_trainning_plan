@@ -1,0 +1,34 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: A sample CloudFormation template with YAML comments.
+# Resources section
+Resources:
+  mytestVPC01: 
+    Type: AWS::EC2::VPC
+    Properties: 
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags: 
+        - Key: Name
+          Value: my-test-VPC-01
+        - Key: month
+          Value: "2026-04"
+  mytestigw01: 
+    Type: AWS::EC2::InternetGateway
+    Properties: 
+      Tags: 
+        - Key: Name
+          Value: my-test-igw-01
+        - Key: month
+          Value: "2026-04"
+
+  subnet01:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref mytestVPC01
+      CidrBlock: 10.0.1.0/16
+      Tags:
+        - Key: Name
+          Value: my-test-subnet-01
+        - Key: month
+          Value: "2026-04"
