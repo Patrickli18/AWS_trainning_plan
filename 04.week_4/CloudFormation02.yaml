@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: a training template for learning
+
+
+Parameters: 
+  env01: 
+    Description: a test parameter
+    Type: String
+    Default: DEV
+    AllowedValues: 
+      - DEV
+      - TEST
+      - PROD
+  vpcCidr:
+    Type: String
+    Default: 10.0.0.0/16
+  subCidr:
+    Type: String
+    Default: 10.0.1.0/24
+
+Resources:
+  mytestVPC: 
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref vpcCidr
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags: 
+        - Key: Name
+          Value: 
+            Fn::Sub:
+              ${env01}-vpc-01
+        - Key: month
+          Value: "2026-04"
+  mytestigw02:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags: 
+        - Key: Name
+          Value:
+            Fn::Sub:
+              ${env01}-igw-01
+        - Key: month
+          Value: "2026-04"
+  mytestattach:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref mytestigw02
+      VpcId: !Ref mytestVPC
+  subnet01:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref mytestVPC
+      CidrBlock: !Ref subCidr
+      Tags: 
+        - Key: Name
+          Value: 
+            Fn::Sub:
+              ${env01}-subnet-01
+        - Key: month
+          Value: "2026-04"
