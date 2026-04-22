@@ -1,15 +1,53 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: A sample CloudFormation template with YAML comments.
+
+Parameters:
+  env01:
+    Description: A test paramter for learning CloudFormation
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - test
+      - prod
 Resources:
-  mytestec2:
-    Type: AWS::EC2::Instance
+  mytestvpc01:
+    Type: AWS::EC2::VPC
     Properties: 
-      ImageId: ami-0c94855ba95c71c99
-      InstanceType: t2.micro
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
       Tags: 
         - Key: Name
-          Value: my-test-ec2-01
+          Value: 
+            Fn::Sub:
+              ${env01}-vpc-01
         - Key: month
           Value: "2026-04"
+  mytestigw01:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags: 
+        - Key: Name
+          Value: 
+            Fn::Sub:
+              ${env01}-igw-01
+  gitattach01:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref mytestigw01
+      VpcId: !Ref mytestvpc01
+  subnet01:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref mytestvpc01
+      CidrBlock: 10.0.1.0/24
+      Tags: 
+        - Key: Name
+          Value:
+            Fn::Sub:
+              ${env01}-subnet-01
+
+
 
 
