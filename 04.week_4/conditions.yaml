@@ -48,6 +48,7 @@ Resources:
           Value:
             Fn::Sub:
               ${env01}-vpc-01
+  # condition is true when env01 is PROD, then add EnvName tag, otherwise do not add EnvName tag
         - Fn::If:
           - isPROD
           - Key: EnvName
@@ -68,6 +69,7 @@ Resources:
             Fn::Sub:
               ${env01}-subnet-01
   subnet02:
+  # condition is true when env01 is PROD, then create subnet02, otherwise do not create subnet02
     Condition: isPROD
     Type: AWS::EC2::Subnet
     Properties:
