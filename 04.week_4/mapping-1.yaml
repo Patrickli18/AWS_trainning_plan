@@ -1,0 +1,77 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: a mapping template for learning
+
+Mappings:
+  env:
+    name:
+      "1111111": DEV
+      "2222222": TEST
+      "3386545454654929": PROD
+  DEV:
+    cidr:
+      vpc: 10.0.0.0/16
+      subnet01: 10.0.1.0/24
+      subnet02: 10.0.2.0/24
+  TEST:
+    cidr:
+      vpc: 10.2.0.0/16
+      subnet01: 10.2.1.0/24
+      subnet02: 10.2.2.0/24
+  PROD:
+    cidr:
+      vpc: 10.3.0.0/16
+      subnet01: 10.3.1.0/24
+      subnet02: 10.3.2.0/24
+
+Resources:
+  mytestVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 
+        Fn::FindInMap:
+          - Fn::FindInMap: [env,name,!Ref "AWS::AccountId"]
+          - cidr
+          - vpc
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub:
+              - ${envname}-vpc-01
+              - envname: 
+                  Fn::FindInMap: [env,name,!Ref "AWS::AccountId"]
+        - Key: month
+          Value: "2026-04"
+  subnet01:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref mytestVpc
+      CidrBlock: 
+        Fn::FindInMap:
+          - Fn::FindInMap: [env,name,!Ref "AWS::AccountId"]
+          - cidr
+          - subnet01
+      Tags: 
+        - Key: Name
+          Value:
+            Fn::Sub:
+              - ${envname}-subnet-01
+              - envname: 
+                  Fn::FindInMap: [env,name,!Ref "AWS::AccountId"]
+  subnet02:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref mytestVpc
+      CidrBlock: 
+        Fn::FindInMap:
+          - Fn::FindInMap: [env,name,!Ref "AWS::AccountId"]
+          - cidr
+          - subnet02
+      Tags: 
+        - Key: Name
+          Value:
+            Fn::Sub:
+              - ${envname1}-subnet-02
+              - envname1: 
+                  Fn::FindInMap: [env,name,!Ref "AWS::AccountId"]
