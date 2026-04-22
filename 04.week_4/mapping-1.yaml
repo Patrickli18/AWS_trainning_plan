@@ -6,7 +6,7 @@ Mappings:
     name:
       "1111111": DEV
       "2222222": TEST
-      "3386545454654929": PROD
+      "3332443254679689": PROD
   DEV:
     cidr:
       vpc: 10.0.0.0/16
@@ -72,6 +72,8 @@ Resources:
         - Key: Name
           Value:
             Fn::Sub:
-              - ${envname1}-subnet-02
+              - ${envname1}-subnet-${envname2}-02
               - envname1: 
+                  Fn::FindInMap: [env,name,!Ref "AWS::AccountId"]
+                envname2:
                   Fn::FindInMap: [env,name,!Ref "AWS::AccountId"]
