@@ -1,25 +1,27 @@
-AWSTemplateFormatVersion: 2010-09-09
-Description: A sample CloudFormation template with YAML comments.
+AWSTemplateFormatVersion: '2010-09-09'
+Description: a training template for learning
 
-Parameters:
-  env01:
-    Description: A test paramter for learning CloudFormation
+
+Parameters: 
+  env01: 
+    Description: a test parameter
     Type: String
-    Default: dev
-    AllowedValues:
-      - dev
-      - test
-      - prod
+    Default: DEV
+    AllowedValues: 
+      - DEV
+      - TEST
+      - PROD
   vpcCidr:
     Type: String
-    Default: 10.10.0.0/16
+    Default: 10.0.0.0/16
   subCidr:
     Type: String
-    Default: 10.10.1.0/24
+    Default: 10.0.1.0/24
+
 Resources:
-  mytestvpc01:
+  mytestVPC: 
     Type: AWS::EC2::VPC
-    Properties: 
+    Properties:
       CidrBlock: !Ref vpcCidr
       EnableDnsHostnames: true
       EnableDnsSupport: true
@@ -30,26 +32,30 @@ Resources:
               ${env01}-vpc-01
         - Key: month
           Value: "2026-04"
-  mytestigw01:
+  mytestigw02:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags: 
         - Key: Name
-          Value: 
+          Value:
             Fn::Sub:
               ${env01}-igw-01
-  gitattach01:
+        - Key: month
+          Value: "2026-04"
+  mytestattach:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
-      InternetGatewayId: !Ref mytestigw01
-      VpcId: !Ref mytestvpc01
+      InternetGatewayId: !Ref mytestigw02
+      VpcId: !Ref mytestVPC
   subnet01:
     Type: AWS::EC2::Subnet
     Properties:
-      VpcId: !Ref mytestvpc01
+      VpcId: !Ref mytestVPC
       CidrBlock: !Ref subCidr
       Tags: 
         - Key: Name
-          Value:
+          Value: 
             Fn::Sub:
               ${env01}-subnet-01
+        - Key: month
+          Value: "2026-04"

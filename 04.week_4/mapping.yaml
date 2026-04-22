@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: a mapping template for learning
+
+Parameters:
+  env01:
+    Type: String
+    Default: DEV
+    AllowedValues:
+      - DEV
+      - TEST
+      - PROD
+Mappings:
+  DEV:
+    cidr:
+      vpc: 10.0.0.0/16
+      subnet01: 10.0.1.0/24
+      subnet02: 10.0.2.0/24
+  TEST:
+    cidr:
+      vpc: 10.2.0.0/16
+      subnet01: 10.2.1.0/24
+      subnet02: 10.2.2.0/24
+  PROD:
+    cidr:
+      vpc: 10.3.0.0/16
+      subnet01: 10.3.1.0/24
+      subnet02: 10.3.2.0/24
+
+Resources:
+  mytestVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 
+        Fn::FindInMap:
+        - !Ref env01
+        - cidr
+        - vpc
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Sub:
+              ${env01}-vpc-01
+        - Key: month
+          Value: "2026-04"
+  subnet01:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref mytestVpc
+      CidrBlock: 
+        Fn::FindInMap:
+        - !Ref env01
+        - cidr
+        - subnet01
+      Tags: 
+        - Key: Name
+          Value:
+            Fn::Sub:
+              ${env01}-subnet-01
+  subnet02:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref mytestVpc
+      CidrBlock: 
+        Fn::FindInMap:
+        - !Ref env01
+        - cidr
+        - subnet02
+      Tags: 
+        - Key: Name
+          Value:
+            Fn::Sub:
+              ${env01}-subnet-02
