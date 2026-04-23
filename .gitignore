@@ -4,5 +4,7 @@
 *.backup
 *.tfstate
 *.lock.hcl
-
-
+*.backup
+*.tfstate
+provider.tf
+.terraform/
