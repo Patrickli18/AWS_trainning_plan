@@ -8,3 +8,4 @@
 *.tfstate
 provider.tf
 .terraform/
+provider.tf
